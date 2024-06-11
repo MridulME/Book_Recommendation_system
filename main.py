@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import NearestNeighbors
 import pandas as pd
-import connection&query as t
+import connection_and_query as t
 
 app = Flask(__name__)
 
