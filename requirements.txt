@@ -1,6 +1,10 @@
+sqlalchemy
 flask
+pymysql
+streamlit
 scikit-learn
 pandas
-sshtunnel
-sqlalchemy
-pymysql
+jsonify
+requests
+openpyxl
+cryptography
