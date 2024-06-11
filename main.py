@@ -1,13 +1,12 @@
+from table_reader import connect_to_mysql
 from flask import Flask, request, jsonify
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import NearestNeighbors
 import pandas as pd
-import connection_and_query as t
 
 app = Flask(__name__)
 
-book_df = t.df1
-user_df = t.df2
+book_df, user_df = connect_to_mysql()
 
 # Train the model
 def train_model(book_df):
