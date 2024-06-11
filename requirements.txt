@@ -3,3 +3,4 @@ scikit-learn
 pandas
 sshtunnel
 sqlalchemy
+pymysql
