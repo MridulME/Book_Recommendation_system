@@ -21,10 +21,10 @@ def query_mysql_via_ssh(ssh_host, ssh_port, ssh_user, ssh_password, db_user, db_
     return df
 
 # Configuration
-ssh_host = ''
+ssh_host = '192.168.1.228'
 ssh_port = 22
-ssh_user = ''
-ssh_password = ''
+ssh_user = 'infi'
+ssh_password = 'Passw0rd'
 
 db_user = 'infi'
 db_password = 'infi'
