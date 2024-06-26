@@ -1,4 +1,4 @@
-from table_reader import connect_to_mysql
+from table_reader import connect_to_mysql, refresh_data, start_background_refresh, transform_book_df
 from flask import Flask, request, jsonify
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import NearestNeighbors
@@ -6,15 +6,12 @@ import pandas as pd
 
 app = Flask(__name__)
 
-book_df, user_df = connect_to_mysql()
+book_df, user_df, book_query, user_query = connect_to_mysql()
 
-
-# Train the model
 def train_model(book_df):
     try:
         all_titles = book_df['Title'].tolist()
         tfidf_vectorizer = TfidfVectorizer(stop_words='english')
-#       tfidf_vectorizer = TfidfVectorizer(stop_words='english', max_df=0.8, min_df=3, ngram_range=(1, 2))
         tfidf_matrix = tfidf_vectorizer.fit_transform(all_titles)
         knn_model = NearestNeighbors(metric='cosine', algorithm='brute')
         knn_model.fit(tfidf_matrix)
@@ -24,11 +21,8 @@ def train_model(book_df):
     except Exception as e:
         return None, None, None
 
-
 tfidf_vectorizer, knn_model, tfidf_matrix = train_model(book_df)
 
-
-# Recommend books
 def recommend_books(interest_areas, book_df, tfidf_vectorizer, knn_model, top_n=5, similarity_threshold=0.1):
     try:
         interest_areas_list = [ia.strip() for ia in interest_areas.split(',')]
@@ -49,8 +43,6 @@ def recommend_books(interest_areas, book_df, tfidf_vectorizer, knn_model, top_n=
     except Exception as e:
         return "No matching books found due to an error."
 
-
-# Flask endpoint to recommend books based on user ID
 @app.route('/recommend', methods=['GET'])
 def recommend():
     user_id = request.args.get('user_id')
@@ -58,6 +50,11 @@ def recommend():
         return jsonify({"error": "User ID is required"}), 400
 
     try:
+        global book_df, user_df, tfidf_vectorizer, knn_model, tfidf_matrix
+        book_df, user_df = refresh_data(book_query, user_query)
+        book_df = transform_book_df(book_df)  # Apply transformations after refresh
+        tfidf_vectorizer, knn_model, tfidf_matrix = train_model(book_df)
+
         user_id = int(user_id)
         user_interest = user_df.loc[user_df['professor_id'] == user_id, 'interest_area'].values[0]
         recommendations = recommend_books(user_interest, book_df, tfidf_vectorizer, knn_model)
@@ -73,8 +70,6 @@ def recommend():
     except Exception as e:
         return jsonify({"error": f"An unexpected error occurred: {e}"}), 500
 
-
-# Flask endpoint to recommend books based on interest area
 @app.route('/recommend_by_interest', methods=['GET'])
 def recommend_by_interest():
     interest_area = request.args.get('interest_area')
@@ -82,6 +77,11 @@ def recommend_by_interest():
         return jsonify({"error": "Interest area is required"}), 400
 
     try:
+        global book_df, user_df, tfidf_vectorizer, knn_model, tfidf_matrix
+        book_df, user_df = refresh_data(book_query, user_query)
+        book_df = transform_book_df(book_df)  # Apply transformations after refresh
+        tfidf_vectorizer, knn_model, tfidf_matrix = train_model(book_df)
+
         recommendations = recommend_books(interest_area, book_df, tfidf_vectorizer, knn_model)
         if isinstance(recommendations, pd.DataFrame):
             recommended_books = recommendations.to_dict(orient='records')
@@ -91,6 +91,6 @@ def recommend_by_interest():
     except Exception as e:
         return jsonify({"error": f"An unexpected error occurred: {e}"}), 500
 
-
 if __name__ == '__main__':
+    start_background_refresh(book_df, user_df, book_query, user_query, interval=60)
     app.run(host='0.0.0.0', port=5000, debug=True)
