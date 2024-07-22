@@ -1,10 +1,7 @@
 sqlalchemy
 flask
 pymysql
-streamlit
 scikit-learn
 pandas
-jsonify
-requests
 openpyxl
 cryptography
